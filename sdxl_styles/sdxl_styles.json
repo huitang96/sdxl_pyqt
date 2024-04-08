@@ -1,0 +1,15 @@
+[
+    {
+        "name": "人物风格",
+        "prompt": "(ultra-detailed), detailed texture, real"
+    },
+    {
+        "name": "未来科技",
+        "prompt": "biomechanical style {prompt} . blend of organic and mechanical elements, futuristic, cybernetic, detailed, intricate"
+    },
+    {
+        "name": "艺术风格",
+        "prompt": "ethereal fantasy concept art of  {prompt} . magnificent, celestial, ethereal, painterly, epic, majestic, magical, fantasy art, cover art, dreamy"
+
+    }
+]

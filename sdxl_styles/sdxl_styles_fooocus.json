@@ -1,0 +1,10 @@
+[
+    {
+        "name": "Fooocus Masterpiece",
+        "prompt": "(masterpiece),(best quality),(8K),"
+    },
+    {
+        "name": "Fooocus Cinematic",
+        "prompt": "cinematic still {prompt} . emotional, harmonious, vignette, highly detailed, high budget, bokeh, cinemascope, moody, epic, gorgeous, film grain, grainy"
+    }
+]
