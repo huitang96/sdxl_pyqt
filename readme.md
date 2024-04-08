@@ -8,5 +8,4 @@
 优化代码结构
 
 ##### 界面
-
-![img_1.png](img_1.png)
+![img_1.png](image/img_1.png)
