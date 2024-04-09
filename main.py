@@ -46,9 +46,19 @@ class InferenceTask(QObject):
 
     def run(self):
         self.is_running = True
+        g = torch.Generator(device="cuda")
         try:
             outputs = self.parent.pipe(
                 prompt=self.text_prompt,
+                negative_prompt = "paintings, cartoon, anime, sketches, worst quality, low quality, normal quality, lowres, "
+                                  "watermark, monochrome, grayscale, ugly, blurry, Tan skin, dark skin, black skin, skin spots, "
+                                  "skin blemishes, age spot, glans, disabled, bad anatomy, amputation, bad proportions, twins, "
+                                  "missing body, fused body, extra head, poorly drawn face, bad eyes, deformed eye, unclear eyes, "
+                                  "cross-eyed, long neck, malformed limbs, extra limbs, extra arms, missing arms, bad tongue, "
+                                  "strange fingers, mutated hands, missing hands, poorly drawn hands, extra hands, fused hands, "
+                                  "connected hand, bad hands, missing fingers, extra fingers, 4 fingers, 3 fingers, deformed hands, "
+                                  "extra legs, bad legs, many legs, more than two legs, bad feet, extra feets, badhandv4, "
+                                  "easynegative",
                 seed=42,
                 width=1024,
                 height=1024,
@@ -56,6 +66,8 @@ class InferenceTask(QObject):
                 guidance_scale=7.5,  # 指导比例，控制生成图像的细节与清晰度，默认值为7.5
                 eta=0.0,
                 output_type="pil",
+                generator=g, # 随机数生成
+                # output_type="latent",
             )
             img = outputs.images[0].resize((1024, 1024))
             img.save("temp.png")
