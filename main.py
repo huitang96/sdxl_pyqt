@@ -35,7 +35,7 @@ class InferenceService:
 class InferenceTask(QObject):
     finished = pyqtSignal()
     error_occurred = pyqtSignal(str)
-    image_generated = pyqtSignal(QPixmap)
+    image_generated = pyqtSignal(QImage)
     def __init__(self, text_prompt, parent):
         super().__init__(parent)
         self.text_prompt = text_prompt
@@ -89,6 +89,7 @@ class mainWindow(QMainWindow, Ui_MainWindow):
         self.load_model()
         self.setup_inference_service()
         self.is_generating = False  # 标记是否正在生成
+
 
     def load_model(self):
         try:
