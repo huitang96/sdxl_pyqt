@@ -21,33 +21,37 @@ class InferenceService:
     def __init__(self, pipe):
         self.pipe = pipe
 
-    def infer(self, text_prompt, parent):
-        task = InferenceTask(text_prompt, parent)
+    def infer(self, text_prompt, negative_prompt, parent):
+        task = InferenceTask(text_prompt, negative_prompt, parent)
         thread = QThread()
         task.moveToThread(thread)
         thread.started.connect(task.run)
         task.finished.connect(thread.quit)
         task.error_occurred.connect(parent.show_error_message)
         task.image_generated.connect(parent.update_image_label)
-        thread.start()
+        task.run()
     # def is_running(self):
     #     return self.task.is_running if self.task else False
 class InferenceTask(QObject):
     finished = pyqtSignal()
     error_occurred = pyqtSignal(str)
     image_generated = pyqtSignal(QImage)
-    def __init__(self, text_prompt, parent):
+    def __init__(self, text_prompt, negative_prompt, parent):
         super().__init__(parent)
         self.text_prompt = text_prompt
+        self.negative_prompt = negative_prompt
         self.parent = parent
         self.is_running = False
     def run(self):
+        print("0")
         self.is_running = True
-        # g = torch.Generator(device="cuda")
+        g = torch.Generator(device="cuda")
         try:
             outputs = self.parent.pipe(
                 prompt=self.text_prompt,
-                negative_prompt="worst quality, low quality, normal quality",
+                # negative_prompt="worst quality, low quality,blurry,noisy,unsharp,low-resolution,pixelated,"
+                #                 "out of focus,mosaic effect,distorted,loss of detail,muddy colors",
+                negative_prompt=self.negative_prompt,
                 seed=42,
                 width=1024,
                 height=1024,
@@ -55,12 +59,14 @@ class InferenceTask(QObject):
                 guidance_scale=7.5,  # 指导比例，控制生成图像的细节与清晰度，默认值为7.5
                 eta=0.0,
                 output_type="pil",
-                # generator=g, # 随机数生成
+                generator=g, # 随机数生成
                 # output_type="latent",
             )
+
             img = outputs.images[0].resize((1024, 1024))
             img.save("temp.png")
             image = QImage("temp.png")
+            print("图片已经生成")
             self.image_generated.emit(image)
         except Exception as e:
             self.error_occurred.emit(f"模型推理过程中发生错误：{str(e)}")
@@ -80,7 +86,7 @@ class mainWindow(QMainWindow, Ui_MainWindow):
         font = QFont("Times New Roman", 14)
         self.ui.plainTextEdit.setFont(font)
         self.pipe = None  # 初始化模型引用为空
-        self.prompt_content_comboBox = "korea girl,looking at viewer,alleyway,collared_shirt,pale_skin,long hair,real world"
+        self.prompt_content_comboBox = ""
         self.ui.pushButton_2.setCheckable(True)
         self.ui.pushButton_2.clicked.connect(self.on_pushButton_2_clicked)
         self.ui.pushButton_3.setCheckable(True)
@@ -89,7 +95,6 @@ class mainWindow(QMainWindow, Ui_MainWindow):
         self.load_model()
         self.setup_inference_service()
         self.is_generating = False  # 标记是否正在生成
-
 
     def load_model(self):
         try:
@@ -101,33 +106,37 @@ class mainWindow(QMainWindow, Ui_MainWindow):
     def show_error_message(self, message):
         QMessageBox.critical(self, "错误", message)
 
-    def update_image_label(self, image):
-        pixmap = QPixmap.fromImage(image)
-        self.ui.image_label.setPixmap(pixmap)
-        QTimer.singleShot(0, lambda: os.remove("temp.png"))  # 删除临时文件
-
     def setup_inference_service(self):
         self.inference_service = InferenceService(self.pipe)
         self.inference_start.connect(self.run_inference)
+
+    def update_image_label(self, image):
+        pixmap = QPixmap.fromImage(image)
+        self.ui.image_label.setPixmap(pixmap) # 更新ui 在主线程中进行
+        QTimer.singleShot(0, lambda: os.remove("temp.png"))  # 删除临时文件
 
     def run_inference(self):
         # if self.pipe is not None and not self.inference_service.is_running:
         if self.pipe is not None:
             print("开始推理")
             self.is_generating = True
-            text_content = self.ui.plainTextEdit.toPlainText() or "1dog,"
-            self.text_prompt = text_content + self.prompt_content_comboBox
-            self.inference_service.infer(self.text_prompt, self)
+            text_content = self.ui.plainTextEdit.toPlainText()
+            self.default = "(masterpiece),(best quality),(8K),"
+            self.text_prompt = self.default + text_content + self.prompt_content_comboBox
+            self.inference_service.infer(self.text_prompt, self.negative_prompt, self)
 
     def on_comboBox_currentTextChanged(self, text):
         data = self.read_json("sdxl_styles/sdxl_styles.json")
-        self.prompt_content_comboBox = self.get_prompt_for_name(text, data)
+        self.prompt_content_comboBox, self.negative_prompt = self.get_prompt_for_name(text, data)
 
     def get_prompt_for_name(self, name, data):
+        prompt = {}
+        negative_prompt = {}
         for item in data:
             if item["name"] == name:
-                return item.get('prompt')
-        return ""
+                prompt = item.get('prompt')
+                negative_prompt = item.get('negative_prompt')
+        return prompt, negative_prompt
 
     def on_pushButton_3_clicked(self):
         self.is_generating = False
