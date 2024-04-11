@@ -32,33 +32,22 @@ class InferenceService:
         thread.start()
     # def is_running(self):
     #     return self.task.is_running if self.task else False
-
 class InferenceTask(QObject):
     finished = pyqtSignal()
     error_occurred = pyqtSignal(str)
     image_generated = pyqtSignal(QPixmap)
-
     def __init__(self, text_prompt, parent):
         super().__init__(parent)
         self.text_prompt = text_prompt
         self.parent = parent
         self.is_running = False
-
     def run(self):
         self.is_running = True
-        g = torch.Generator(device="cuda")
+        # g = torch.Generator(device="cuda")
         try:
             outputs = self.parent.pipe(
                 prompt=self.text_prompt,
-                negative_prompt = "paintings, cartoon, anime, sketches, worst quality, low quality, normal quality, lowres, "
-                                  "watermark, monochrome, grayscale, ugly, blurry, Tan skin, dark skin, black skin, skin spots, "
-                                  "skin blemishes, age spot, glans, disabled, bad anatomy, amputation, bad proportions, twins, "
-                                  "missing body, fused body, extra head, poorly drawn face, bad eyes, deformed eye, unclear eyes, "
-                                  "cross-eyed, long neck, malformed limbs, extra limbs, extra arms, missing arms, bad tongue, "
-                                  "strange fingers, mutated hands, missing hands, poorly drawn hands, extra hands, fused hands, "
-                                  "connected hand, bad hands, missing fingers, extra fingers, 4 fingers, 3 fingers, deformed hands, "
-                                  "extra legs, bad legs, many legs, more than two legs, bad feet, extra feets, badhandv4, "
-                                  "easynegative",
+                negative_prompt="worst quality, low quality, normal quality",
                 seed=42,
                 width=1024,
                 height=1024,
@@ -66,41 +55,36 @@ class InferenceTask(QObject):
                 guidance_scale=7.5,  # 指导比例，控制生成图像的细节与清晰度，默认值为7.5
                 eta=0.0,
                 output_type="pil",
-                generator=g, # 随机数生成
+                # generator=g, # 随机数生成
                 # output_type="latent",
             )
             img = outputs.images[0].resize((1024, 1024))
             img.save("temp.png")
-            pixmap = QPixmap.fromImage(QImage("temp.png"))
-            self.image_generated.emit(pixmap)
+            image = QImage("temp.png")
+            self.image_generated.emit(image)
         except Exception as e:
             self.error_occurred.emit(f"模型推理过程中发生错误：{str(e)}")
         finally:
             self.is_running = False
             self.finished.emit()
-
 class mainWindow(QMainWindow, Ui_MainWindow):
     inference_start = pyqtSignal()
-
     def __init__(self):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.text_prompt = ""
         self.setWindowTitle("手把手教你制作, 添加微信: artfulcode")
-
         self.ui.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # 设置字体
         font = QFont("Times New Roman", 14)
         self.ui.plainTextEdit.setFont(font)
-
         self.pipe = None  # 初始化模型引用为空
         self.prompt_content_comboBox = "korea girl,looking at viewer,alleyway,collared_shirt,pale_skin,long hair,real world"
         self.ui.pushButton_2.setCheckable(True)
         self.ui.pushButton_2.clicked.connect(self.on_pushButton_2_clicked)
         self.ui.pushButton_3.setCheckable(True)
         self.ui.pushButton_3.clicked.connect(self.on_pushButton_3_clicked)
-
         self.ui.comboBox.currentTextChanged.connect(self.on_comboBox_currentTextChanged)
         self.load_model()
         self.setup_inference_service()
@@ -116,7 +100,8 @@ class mainWindow(QMainWindow, Ui_MainWindow):
     def show_error_message(self, message):
         QMessageBox.critical(self, "错误", message)
 
-    def update_image_label(self, pixmap):
+    def update_image_label(self, image):
+        pixmap = QPixmap.fromImage(image)
         self.ui.image_label.setPixmap(pixmap)
         QTimer.singleShot(0, lambda: os.remove("temp.png"))  # 删除临时文件
 
