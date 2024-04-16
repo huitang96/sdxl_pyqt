@@ -43,19 +43,16 @@ class InferenceTask(QObject):
         self.parent = parent
         self.is_running = False
     def run(self):
-        print("0")
         self.is_running = True
         g = torch.Generator(device="cuda")
         try:
             outputs = self.parent.pipe(
                 prompt=self.text_prompt,
-                # negative_prompt="worst quality, low quality,blurry,noisy,unsharp,low-resolution,pixelated,"
-                #                 "out of focus,mosaic effect,distorted,loss of detail,muddy colors",
                 negative_prompt=self.negative_prompt,
                 seed=42,
-                width=1024,
-                height=1024,
-                num_inference_steps=20,  # 迭代步数，默认值为50。
+                width=800,
+                height=640,
+                num_inference_steps=20,  # 迭代步数，默认值为50
                 guidance_scale=7.5,  # 指导比例，控制生成图像的细节与清晰度，默认值为7.5
                 eta=0.0,
                 output_type="pil",
@@ -80,13 +77,16 @@ class mainWindow(QMainWindow, Ui_MainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.text_prompt = ""
-        self.setWindowTitle("手把手教你制作, 添加微信: artfulcode")
+        self.setWindowTitle("SDXL PYQT")
+        # 设置窗口无边框
+        # self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.ui.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # 设置字体
         font = QFont("Times New Roman", 14)
         self.ui.plainTextEdit.setFont(font)
         self.pipe = None  # 初始化模型引用为空
         self.prompt_content_comboBox = ""
+        self.negative_prompt_gen = ""
         self.ui.pushButton_2.setCheckable(True)
         self.ui.pushButton_2.clicked.connect(self.on_pushButton_2_clicked)
         self.ui.pushButton_3.setCheckable(True)
@@ -121,13 +121,15 @@ class mainWindow(QMainWindow, Ui_MainWindow):
             print("开始推理")
             self.is_generating = True
             text_content = self.ui.plainTextEdit.toPlainText()
-            self.default = "(masterpiece),(best quality),(8K),"
-            self.text_prompt = self.default + text_content + self.prompt_content_comboBox
+            self.default_prompt = "(masterpiece),(best quality),(8K),"
+            self.default_negative_prompt="worst quality, low quality, normal quality, lowres, watermark"
+            self.text_prompt = self.default_prompt + text_content + self.prompt_content_comboBox
+            self.negative_prompt = self.default_negative_prompt + self.negative_prompt_gen
             self.inference_service.infer(self.text_prompt, self.negative_prompt, self)
 
     def on_comboBox_currentTextChanged(self, text):
         data = self.read_json("sdxl_styles/sdxl_styles.json")
-        self.prompt_content_comboBox, self.negative_prompt = self.get_prompt_for_name(text, data)
+        self.prompt_content_comboBox, self.negative_prompt_gen = self.get_prompt_for_name(text, data)
 
     def get_prompt_for_name(self, name, data):
         prompt = {}
