@@ -52,7 +52,7 @@ class InferenceTask(QObject):
                 seed=42,
                 width=800,
                 height=640,
-                num_inference_steps=20,  # 迭代步数，默认值为50
+                num_inference_steps=20,  # 迭代步数
                 guidance_scale=7.5,  # 指导比例，控制生成图像的细节与清晰度，默认值为7.5
                 eta=0.0,
                 output_type="pil",
@@ -60,7 +60,7 @@ class InferenceTask(QObject):
                 # output_type="latent",
             )
 
-            img = outputs.images[0].resize((1024, 1024))
+            img = outputs.images[0].resize((800, 640))
             img.save("temp.png")
             image = QImage("temp.png")
             print("图片已经生成")
